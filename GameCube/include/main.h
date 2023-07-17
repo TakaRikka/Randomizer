@@ -419,6 +419,12 @@ namespace mod
     void* handle_dScnLogo_c_dt( void* dScnLogo_c, int16_t bFreeThis );
     extern void* ( *return_dScnLogo_c_dt )( void* dScnLogo_c, int16_t bFreeThis );
 
+    void handle_setRandomEntrance( const char* stage, int16_t point, int8_t roomNo, int8_t layer, float speed, uint32_t mode, int p6, int8_t wipe, int16_t angle, int p9, int p10 );
+    extern void ( *dComIfGp_setNextStage_return )( const char* stage, int16_t point, int8_t roomNo, int8_t layer, float speed, uint32_t mode, int p6, int8_t wipe, int16_t angle, int p9, int p10 );
+
+    int handle_normalizeSpawnPoint( libtp::tp::d_save::dSv_info_c* infoPtr, char* i_dataPtr, int i_dataNum );
+    extern int ( *return_memory_to_card )( libtp::tp::d_save::dSv_info_c* infoPtr, char* i_dataPtr, int i_dataNum );
+
     // Archive/Resource functions
     libtp::tp::d_resource::dRes_info_c* handle_getResInfo( const char* arcName,
                                                            libtp::tp::d_resource::dRes_info_c* objectInfo,

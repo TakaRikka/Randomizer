@@ -42,6 +42,8 @@ namespace mod::rando
             this->applyRegionFlags();
 
             this->giveStartingItems();
+
+            // this->setEntranceTable();
             getConsole() << "Seed Applied Successfully.\n";
             return true;
         }
@@ -135,6 +137,21 @@ namespace mod::rando
 
             m_AreaFlagsModified = areaFlagsModified;
             tp::d_save::getSave( SaveInfo, data::stage::regions[2] );
+        }
+    }
+
+    KEEP_FUNC void Seed::setEntranceTable( const char* i_seed, rando::stage_spawn_info* table  ) {
+        memcpy(table, vanilla_spawn_table, LIST_SIZE * sizeof(stage_spawn_info));
+
+        uint64_t seed = *(uint64_t*)i_seed;
+
+        for (int n = LIST_SIZE - 1; n >= 0; n--) {
+            uint64_t new_idx = seed * (n + 1);
+            new_idx %= LIST_SIZE;
+
+            stage_spawn_info tmp = table[n];
+            table[n] = table[new_idx];
+            table[new_idx] = tmp;
         }
     }
 

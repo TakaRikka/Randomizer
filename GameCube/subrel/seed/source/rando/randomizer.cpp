@@ -11,6 +11,8 @@
 #include "rando/data.h"
 #include "rando/seed.h"
 #include "memory.h"
+#include <cstring>
+#include <cstdio>
 
 namespace mod::rando
 {
@@ -52,6 +54,22 @@ namespace mod::rando
 
                 // Load checks for first load
                 onStageLoad();
+
+                m_entranceTable = new stage_spawn_info[LIST_SIZE];
+                if (m_entranceTable != nullptr) {
+                    m_Seed->setEntranceTable(m_SeedInfo.minSeedInfo->fileName, m_entranceTable);
+
+                    for (int i = 0; i < 3; i++) {
+                        char buf2[70];
+                        rando::stage_spawn_info* table = m_entranceTable;
+                        snprintf(buf2, sizeof(buf2), "\n[%d]: %d, %d, %d", i, table[i].mStageID, table[i].mRoom, table[i].mPoint);
+                        getConsole() << buf2;
+                    }
+                } else {
+                    delete m_entranceTable;
+                    libtp::memory::clearMemory( &m_entranceTable, sizeof( m_entranceTable ) );
+                    m_entranceTable = nullptr;
+                }
             }
             else
             {

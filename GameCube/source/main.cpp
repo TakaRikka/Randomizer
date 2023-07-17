@@ -51,6 +51,8 @@
 #include "rando/customItems.h"
 #include "cxx.h"
 
+#include "rando/entrance_table.h"
+
 #ifdef TP_EU
 #include "tp/d_s_logo.h"
 #endif
@@ -249,6 +251,20 @@ namespace mod
     // Title Screen functions
     KEEP_VAR void* ( *return_dScnLogo_c_dt )( void* dScnLogo_c, int16_t bFreeThis ) = nullptr;
 
+    KEEP_VAR void ( *dComIfGp_setNextStage_return )( const char* stage,
+                                                     int16_t point,
+                                                     int8_t roomNo,
+                                                     int8_t layer,
+                                                     float speed,
+                                                     uint32_t mode,
+                                                     int p6,
+                                                     int8_t wipe,
+                                                     int16_t angle,
+                                                     int p9,
+                                                     int p10 ) = nullptr;
+
+    KEEP_VAR int ( *return_memory_to_card )( libtp::tp::d_save::dSv_info_c* infoPtr, char* i_dataPtr, int i_dataNum ) = nullptr;
+
     // Archive/resource functions
     KEEP_VAR libtp::tp::d_resource::dRes_info_c* ( *return_getResInfo )( const char* arcName,
                                                                          libtp::tp::d_resource::dRes_info_c* objectInfo,
@@ -325,6 +341,15 @@ namespace mod
 
         // Draw the values
         events::drawText( buf, 161, 430, 0xFFFFFFFF, true, 14.f );
+
+        /* if (randomizer->m_entranceTable != nullptr) {
+            for (int i = 0; i < 3; i++) {
+                char buf2[70];
+                rando::stage_spawn_info* table = randomizer->m_entranceTable;
+                snprintf(buf2, sizeof(buf2), "[%d]: %d, %d, %d", i, table[i].mStageID, table[i].mRoom, table[i].mPoint);
+                events::drawText( buf2, 161, 260 + (i * 20), 0xFFFFFFFF, true, 14.f );
+            }
+        } */
     }
 
     KEEP_FUNC rando::Seed* getCurrentSeed( rando::Randomizer* rando )
@@ -469,7 +494,7 @@ namespace mod
         using namespace tp::d_com_inf_game;
 
 // Uncomment out the next line to display debug heap info
-// #define DRAW_DEBUG_HEAP_INFO
+#define DRAW_DEBUG_HEAP_INFO
 #ifdef DRAW_DEBUG_HEAP_INFO
         drawHeapDebugInfo();
 #undef DRAW_DEBUG_HEAP_INFO
@@ -1886,6 +1911,200 @@ namespace mod
         }
 
         playerStatusPtr->currentHealth = static_cast<uint16_t>( newHealthValue );
+    }
+
+    KEEP_FUNC void handle_setRandomEntrance( const char* stage,
+                                             int16_t point,
+                                             int8_t roomNo,
+                                             int8_t layer,
+                                             float speed,
+                                             uint32_t mode,
+                                             int p6,
+                                             int8_t wipe,
+                                             int16_t angle,
+                                             int p9,
+                                             int p10 )
+    {
+        using namespace libtp::data::stage;
+        static rando::stage_spawn_info next_load;
+        const auto stagesPtr = &allStages[0];
+
+        // load title normally
+        if ( ( !strcmp( stage, "OPENING" ) || !strcmp( stage, "F_SP102" ) ) && roomNo == 0 && (uint8_t) point == 0x64 &&
+             layer == 10 )
+        {
+            return dComIfGp_setNextStage_return( stage, point, roomNo, layer, speed, mode, p6, wipe, angle, p9, p10 );
+        }
+
+        // normalize new file load so that proper flags and such are set
+        if ( !strcmp( "F_SP108", stage ) && roomNo == 1 && layer == 13 )
+        {
+            return dComIfGp_setNextStage_return( stage, point, roomNo, layer, speed, mode, p6, wipe, angle, p9, p10 );
+        }
+
+        // normalize sewers
+        if ( ( !strcmp( stage, "R_SP107" ) && roomNo == 0 && (uint8_t) point == 0x18 ) ||
+             ( !strcmp( stage, "R_SP107" ) && roomNo == 1 && (uint8_t) point == 0x00 ) ||
+             ( !strcmp( stage, "R_SP107" ) && roomNo == 1 && (uint8_t) point == 0x07 ) ||
+             ( !strcmp( stage, "R_SP107" ) && roomNo == 2 && (uint8_t) point == 0x00 ) )
+        {
+            return dComIfGp_setNextStage_return( stage, point, roomNo, layer, speed, mode, p6, wipe, angle, p9, p10 );
+        }
+
+        // normalize CT center
+        if ( !strcmp( stage, "F_SP116" ) && roomNo == 0 && (uint8_t) point == 0 )
+        {
+            return dComIfGp_setNextStage_return( stage, point, roomNo, layer, speed, mode, p6, wipe, angle, p9, p10 );
+        }
+
+        // Normalize dungeon loads
+        if ( !strncmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "D_MN", 4 ) )
+        {
+            if ( strchr( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), 'A' ) ||
+                 !strcmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "D_MN08D" ) ||
+                 !strcmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "D_MN09B" ) ||
+                 !strcmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "D_MN09C" ) )
+            {
+                // Current Stage is a boss stage, so normalize
+                return dComIfGp_setNextStage_return( stage, point, roomNo, layer, speed, mode, p6, wipe, angle, p9, p10 );
+            }
+
+            if ( !strncmp( stage, "D_MN", 4 ) && !strchr( stage, 'A' ) )
+            {
+                // Current stage is a dungeon, and Next stage is a dungeon stage but not a boss stage, so normalize
+                return dComIfGp_setNextStage_return( stage, point, roomNo, layer, speed, mode, p6, wipe, angle, p9, p10 );
+            }
+        }
+
+        if (point == -4) {
+            return dComIfGp_setNextStage_return( stage, point, roomNo, layer, speed, mode, p6, wipe, angle, p9, p10 );
+        }
+
+        wipe = 0;
+
+        for ( int n = LIST_SIZE - 1; n >= 0; n-- )
+        {
+            if ( !strcmp( stagesPtr[rando::vanilla_spawn_table[n].mStageID], stage ) &&
+                 rando::vanilla_spawn_table[n].mRoom == roomNo && rando::vanilla_spawn_table[n].mPoint == point )
+            {
+                next_load = randomizer->m_entranceTable[n];
+
+                int searchCounter = 1;
+                while ( next_load.mEntranceType == 0xD0 || next_load.mEntranceType == 0xE0 )
+                {
+                    // Find other spawn if its a potentially crashy one
+                    if ( n < 2 )
+                    {
+                        searchCounter = 0;
+                    }
+
+                    if ( searchCounter == 1 )
+                    {
+                        n--;
+                    }
+                    else
+                    {
+                        n++;
+                    }
+
+                    next_load = randomizer->m_entranceTable[n];
+                }
+
+                int8_t next_layer = next_load.mParams & 0xF;
+                if ( next_layer == 15 )
+                {
+                    next_layer = -1;
+                }
+
+                layer = next_layer;
+                break;
+            }
+        }
+
+        strcpy( (char*) stage, stagesPtr[next_load.mStageID] );
+        point = next_load.mPoint;
+        roomNo = next_load.mRoom;
+
+        getConsole() << "\nLoad: " << stage << " " << roomNo << " " << point << "\n";
+
+        return dComIfGp_setNextStage_return( stage, point, roomNo, layer, speed, mode, p6, wipe, angle, p9, p10 );
+    }
+
+    KEEP_FUNC int handle_normalizeSpawnPoint( libtp::tp::d_save::dSv_info_c* infoPtr, char* i_dataPtr, int i_dataNum )
+    {
+        if ( !strncmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "D_MN01", 6 ) )
+        {
+            uint8_t spawn = 0;
+            if ( libtp::tp::d_a_alink::dComIfGs_isEventBit( 0x2020 ) )
+            {
+                spawn = 2;
+            }
+            libtp::tp::d_com_inf_game::dComIfGs_setReturnPlace( "D_MN01", 0, spawn );
+        }
+        else if ( !strncmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "D_MN04", 6 ) )
+        {
+            libtp::tp::d_com_inf_game::dComIfGs_setReturnPlace( "D_MN04", 1, 0 );
+        }
+        else if ( !strncmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "D_MN05", 6 ) )
+        {
+            libtp::tp::d_com_inf_game::dComIfGs_setReturnPlace( "D_MN05", 22, 0 );
+        }
+        else if ( !strncmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "D_MN06", 6 ) )
+        {
+            libtp::tp::d_com_inf_game::dComIfGs_setReturnPlace( "D_MN06", 0, 0 );
+        }
+        else if ( !strncmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "D_MN07", 6 ) )
+        {
+            libtp::tp::d_com_inf_game::dComIfGs_setReturnPlace( "D_MN07", 0, 3 );
+        }
+        else if ( !strncmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "D_MN08", 6 ) )
+        {
+            libtp::tp::d_com_inf_game::dComIfGs_setReturnPlace( "D_MN08", 0, 0 );
+        }
+        else if ( !strncmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "D_MN09", 6 ) )
+        {
+            libtp::tp::d_com_inf_game::dComIfGs_setReturnPlace( "D_MN09", 11, 0 );
+        }
+        else if ( !strncmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "D_MN10", 6 ) )
+        {
+            libtp::tp::d_com_inf_game::dComIfGs_setReturnPlace( "D_MN10", 0, 0 );
+        }
+        else if ( !strncmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "D_MN11", 6 ) )
+        {
+            libtp::tp::d_com_inf_game::dComIfGs_setReturnPlace( "D_MN11", 0, 0 );
+        }
+        else if ( !strcmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "R_SP107" ) &&
+                  libtp::tp::d_com_inf_game::dComIfGp_getStartStageLayer() == 13 )
+        {
+            libtp::tp::d_com_inf_game::dComIfGs_setReturnPlace( "R_SP107", 1, 7 );
+        }
+        else if ( !strcmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "R_SP107" ) &&
+                  libtp::tp::d_com_inf_game::dComIfGp_getStartStageRoomNo() == 1 &&
+                  libtp::tp::d_com_inf_game::dComIfGp_getStartStageLayer() == 14 )
+        {
+            libtp::tp::d_com_inf_game::dComIfGs_setReturnPlace( "R_SP107", 1, 0 );
+        }
+        else if ( !strcmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "R_SP107" ) &&
+                  !strcmp( libtp::tp::d_com_inf_game::dComIfGs_getReturnPlace().link_current_stage, "R_SP107" ) &&
+                  libtp::tp::d_com_inf_game::dComIfGs_getReturnPlace().link_room_id == 0 &&
+                  libtp::tp::d_com_inf_game::dComIfGs_getReturnPlace().link_spawn_point_id == 0x18 &&
+                  ( libtp::tp::d_com_inf_game::dComIfGp_getStartStageLayer() == 7 ||
+                    libtp::tp::d_com_inf_game::dComIfGp_getStartStageLayer() == 0xA ||
+                    libtp::tp::d_com_inf_game::dComIfGp_getStartStageLayer() == 0xB ||
+                    libtp::tp::d_com_inf_game::dComIfGp_getStartStageLayer() == -1 ) )
+        {
+        }
+        else if ( !strcmp( libtp::tp::d_com_inf_game::dComIfGp_getStartStageName(), "R_SP107" ) &&
+                  libtp::tp::d_com_inf_game::dComIfGp_getStartStageRoomNo() == 2 &&
+                  libtp::tp::d_com_inf_game::dComIfGp_getStartStageLayer() == 14 )
+        {
+        }
+        else
+        {
+            libtp::tp::d_com_inf_game::dComIfGs_setReturnPlace( "F_SP116", 0, 0 );
+        }
+
+        return return_memory_to_card( infoPtr, i_dataPtr, i_dataNum );
     }
 
     KEEP_FUNC libtp::tp::d_resource::dRes_info_c* handle_getResInfo( const char* arcName,

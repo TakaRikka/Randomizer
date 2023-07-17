@@ -69,6 +69,7 @@
 800332f8:setLineUpItem
 80034368:onLightDropGetFlag
 800337ec:checkEmptyBottle
+80035798:memory_to_card
 
 // d_event.o
 80042778:defaultSkipStb

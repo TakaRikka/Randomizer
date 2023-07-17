@@ -222,6 +222,10 @@ namespace mod
         // Title Screen functions
         return_dScnLogo_c_dt = patch::hookFunction( libtp::tp::d_s_logo::dScnLogo_c_dt, mod::handle_dScnLogo_c_dt );
 
+        dComIfGp_setNextStage_return = patch::hookFunction(libtp::tp::d_com_inf_game::dComIfGp_setNextStage, mod::handle_setRandomEntrance);
+
+        return_memory_to_card = patch::hookFunction( libtp::tp::d_save::memory_to_card, mod::handle_normalizeSpawnPoint);
+
         // Enemy BGM
         user_patch::bgm::enemybgm::return_startBattleBgm =
             patch::hookFunction( libtp::z2audiolib::z2seqmgr::startBattleBgm, user_patch::handle_startBattleBgm );

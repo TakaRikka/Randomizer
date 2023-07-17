@@ -17,6 +17,7 @@
 #include "tp/m_Do_dvd_thread.h"
 #include "tp/d_a_alink.h"
 #include "rando/customItems.h"
+#include "rando/entrance_table.h"
 
 namespace mod::rando
 {
@@ -79,6 +80,7 @@ namespace mod::rando
         bool m_Enabled = true;            // True if the randomizer is currently enabled
         bool m_SeedInit = false;          // True if seed-specific patches, flags, etc. have been applied to the save-file
         uint8_t m_CurrentSeed = 0xFF;     // The seed that is currently loaded
+        stage_spawn_info* m_entranceTable = nullptr;
     };
 
     uint8_t getFoolishItemModelId( uint8_t originalItem );

@@ -18,6 +18,7 @@
 #include "rando/data.h"
 #include "tools.h"
 #include "data.h"
+#include "rando/entrance_table.h"
 
 namespace mod::rando
 {
@@ -137,6 +138,8 @@ namespace mod::rando
         void applyOneTimePatches( bool set );
 
         void loadShopModels();
+
+        void setEntranceTable ( const char* i_seed, stage_spawn_info* entrance_table );
 
        private:
         uint8_t* m_GCIData = nullptr;     // GCI Data including header
